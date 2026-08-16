@@ -2,17 +2,40 @@
  * ============================================================================
  * GreenLife - Google Apps Script Backend (Code.gs)
  * Personal Habit Tracker & Task Management System for Hemnath & Velu
- * Features: Auto-Provisioning, Data Separation, and Execution Logging
+ * Stores and serves all app data (Users, Habits, HabitLogs, Tasks) from
+ * Google Sheets. No mock/demo data — every row is real data created by
+ * the app itself.
  * ============================================================================
- * 
- * Instructions:
- * 1. Open Google Sheets -> Create a new Spreadsheet named "GreenLife DB".
- * 2. Click Extensions -> Apps Script.
- * 3. Replace all code in Code.gs with this file.
- * 4. Click Deploy -> New deployment -> Select type: Web App.
- * 5. Set "Execute as": "Me"
- * 6. Set "Who has access": "Anyone" (crucial for web frontend fetch access).
- * 7. Click Deploy -> Copy the Web App URL -> Paste into GreenLife Settings.
+ *
+ * SETUP INSTRUCTIONS
+ * -------------------
+ * 1. Go to https://sheets.google.com -> create a new blank Spreadsheet.
+ *    Rename it "GreenLife DB" (or anything you like).
+ * 2. In the sheet, click Extensions -> Apps Script.
+ * 3. Delete any starter code in Code.gs and paste this entire file in.
+ * 4. Click the disk icon (Save project).
+ * 5. Click Deploy -> New deployment.
+ *      - Click the gear icon next to "Select type" -> choose "Web app".
+ *      - Description: anything, e.g. "GreenLife API v1".
+ *      - Execute as: "Me".
+ *      - Who has access: "Anyone" (required so the website can call it).
+ * 6. Click "Deploy". Google will ask you to authorize the script — accept it
+ *    (click "Advanced" -> "Go to project (unsafe)" if you see a warning
+ *    screen, this is normal for your own scripts).
+ * 7. Copy the "Web app URL" it gives you — it looks like:
+ *      https://script.google.com/macros/s/XXXXXXXXXXXX/exec
+ * 8. Paste that URL into js/api.js as `defaultEndpoint`, or into the
+ *    website's Settings screen as a custom endpoint.
+ * 9. Open the spreadsheet, refresh the page, and use the new "GreenLife"
+ *    menu -> "Initialize / Repair Database" to create the sheet tabs
+ *    (Users, Habits, HabitLogs, Tasks, ExecutionLogs) right away. This also
+ *    happens automatically the first time the app calls the API.
+ *
+ * RE-DEPLOYING AFTER FUTURE EDITS
+ * --------------------------------
+ * Any time you change this file, you must click Deploy -> Manage deployments
+ * -> pick the active deployment -> Edit (pencil) -> Version: "New version"
+ * -> Deploy. Simply saving the file does NOT update the live Web App URL.
  */
 
 // Global Sheet Names
@@ -184,6 +207,10 @@ function doPost(e) {
         result = toggleTaskStatusRecord(payload.taskId, payload.userId, payload.completed);
         break;
 
+      case 'updateUser':
+        result = updateUserRecord(payload);
+        break;
+
       case 'logExecution':
         result = logExecutionRecord(payload.log);
         break;
@@ -245,6 +272,17 @@ function createJsonResponse(data) {
  */
 function generateLogId(prefix) {
   return (prefix || 'LOG') + '-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd-HHmmss') + '-' + Math.floor(Math.random() * 899 + 100);
+}
+
+/**
+ * Adds a "GreenLife" menu to the spreadsheet UI so setup can be run manually
+ * without needing to call the web app. Run this once by opening the sheet.
+ */
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('GreenLife')
+    .addItem('Initialize / Repair Database', 'ensureDatabaseSetup')
+    .addToUi();
 }
 
 /**
@@ -728,4 +766,25 @@ function toggleTaskStatusRecord(taskId, userId, completed) {
     }
   }
   return { success: false, error: 'Task not found' };
+}
+
+// Update a user's profile fields (currently: avatar, name, role) in the
+// Users sheet. userId is required; other fields are optional and only
+// overwritten when provided.
+function updateUserRecord(payload) {
+  const userId = payload.userId;
+  if (!userId) return { success: false, error: 'userId is required' };
+
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_USERS);
+  const rows = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).toLowerCase() === String(userId).toLowerCase()) {
+      if (payload.name !== undefined) sheet.getRange(i + 1, 2).setValue(payload.name);
+      if (payload.role !== undefined) sheet.getRange(i + 1, 3).setValue(payload.role);
+      if (payload.avatar !== undefined) sheet.getRange(i + 1, 4).setValue(payload.avatar);
+      return { success: true, userId: userId };
+    }
+  }
+  return { success: false, error: 'User not found' };
 }
