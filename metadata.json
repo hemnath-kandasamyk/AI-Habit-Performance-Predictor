@@ -1,0 +1,6 @@
+{
+  "name": "GreenLife",
+  "description": "A personal habit tracker and task management web application for Hemnath and Velu powered by Vanilla JS and Google Sheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

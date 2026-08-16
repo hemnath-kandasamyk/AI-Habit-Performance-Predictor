@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>GreenLife - Personal Habit Tracker & Task Management</title>
+    <meta name="description" content="A personal habit tracker and task management web application for Hemnath and Velu powered by Google Sheets." />
+    
+    <!-- Theme & Icons -->
+    <meta name="theme-color" content="#10b981" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Google Fonts for High-Craft Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Custom CSS3 Stylesheets (Pure Vanilla CSS, No Frameworks) -->
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/responsive.css" />
+
+    <style>
+      body {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Canvas for Confetti Particle Burst on Habit/Task Completion -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" aria-live="polite"></div>
+
+    <!-- Offline Banner -->
+    <div id="offline-banner" class="offline-banner">
+      ⚡ You are currently offline. Actions will be cached and synchronized with Google Sheets when connected.
+    </div>
+
+    <!-- ======================================================================
+         SCREEN 0: USER SELECTION OVERLAY
+         ====================================================================== -->
+    <div id="user-selection-screen">
+      <div class="user-select-box">
+        <div class="user-select-badge">
+          <span>🌿</span> GreenLife Productivity
+        </div>
+        <h1 class="user-select-title">Who's using the app?</h1>
+        <p class="user-select-subtitle">Choose your athlete profile to continue</p>
+
+        <div class="profiles-grid">
+          <!-- Profile 1: Hemnath -->
+          <div class="profile-card-select" data-user="hemnath" id="select-user-hemnath" tabindex="0" role="button" aria-label="Select Hemnath profile">
+            <div class="avatar-wrapper">
+              <img 
+                class="avatar-img" 
+                src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><circle cx='100' cy='100' r='100' fill='%23064e3b'/><circle cx='100' cy='85' r='40' fill='%23e0a97b'/><path d='M30 200 C30 145 60 135 100 135 C140 135 170 145 170 200 Z' fill='%23059669'/><rect x='60' y='60' width='80' height='12' fill='%2310b981' rx='4'/><text x='100' y='92' font-family='sans-serif' font-weight='bold' font-size='22' fill='%23064e3b' text-anchor='middle'>H</text></svg>" 
+                alt="Hemnath Athlete Portrait" 
+                id="select-avatar-hemnath"
+              />
+              <div class="avatar-badge">⚡</div>
+            </div>
+            <div class="profile-card-name">Hemnath</div>
+            <div class="profile-card-role">Track & Endurance</div>
+            <button class="profile-select-btn">My Progress →</button>
+          </div>
+
+          <!-- Profile 2: Velu -->
+          <div class="profile-card-select" data-user="velu" id="select-user-velu" tabindex="0" role="button" aria-label="Select Velu profile">
+            <div class="avatar-wrapper">
+              <img 
+                class="avatar-img" 
+                src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><circle cx='100' cy='100' r='100' fill='%23022c22'/><circle cx='100' cy='85' r='40' fill='%23f0bf91'/><path d='M30 200 C30 145 60 135 100 135 C140 135 170 145 170 200 Z' fill='%2310b981'/><rect x='60' y='55' width='80' height='12' fill='%236ee7b7' rx='4'/><text x='100' y='92' font-family='sans-serif' font-weight='bold' font-size='22' fill='%23043828' text-anchor='middle'>V</text></svg>" 
+                alt="Velu Athlete Portrait" 
+                id="select-avatar-velu"
+              />
+              <div class="avatar-badge">🔥</div>
+            </div>
+            <div class="profile-card-name">Velu</div>
+            <div class="profile-card-role">High-Performance Triathlete</div>
+            <button class="profile-select-btn">My Progress →</button>
+          </div>
+        </div>
+
+        <div class="user-select-footer">
+          🔒 Strict data isolation • Powered by Google Sheets backend
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         MAIN APP CONTAINER
+         ====================================================================== -->
+    <div id="app-container">
+      
+      <!-- DESKTOP LEFT SIDEBAR (Shown on screen width >= 1024px) -->
+      <aside class="desktop-sidebar">
+        <div class="sidebar-brand">
+          <div class="sidebar-brand-icon">🌿</div>
+          <div class="sidebar-brand-title">Green<span>Life</span></div>
+        </div>
+
+        <nav class="sidebar-nav-list" aria-label="Desktop Main Navigation">
+          <button class="sidebar-nav-item active" data-screen="home">
+            <span class="sidebar-nav-icon">🏠</span> Today / Home
+          </button>
+          <button class="sidebar-nav-item" data-screen="habits">
+            <span class="sidebar-nav-icon">🏃‍♂️</span> My Habits
+          </button>
+          <button class="sidebar-nav-item" data-screen="tasks">
+            <span class="sidebar-nav-icon">📋</span> My Tasks
+          </button>
+          <button class="sidebar-nav-item" data-screen="calendar">
+            <span class="sidebar-nav-icon">📅</span> Calendar
+          </button>
+          <button class="sidebar-nav-item" data-screen="analytics">
+            <span class="sidebar-nav-icon">📊</span> Analytics
+          </button>
+          <button class="sidebar-nav-item" data-screen="profile">
+            <span class="sidebar-nav-icon">👤</span> Profile & Settings
+          </button>
+        </nav>
+
+        <div class="sidebar-user-card" id="sidebar-user-card" data-screen="profile">
+          <img src="" alt="User" class="sidebar-user-avatar" id="sidebar-user-avatar" />
+          <div style="flex: 1; min-width: 0;">
+            <div class="sidebar-user-name" id="sidebar-user-name">User</div>
+            <div class="sidebar-user-switch" data-screen="profile">Switch Profile ⚙️</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN CONTENT VIEWPORT -->
+      <main id="main-content">
+        
+        <!-- Sticky Mobile/Desktop Top Header -->
+        <header class="app-header">
+          <div class="header-user-info">
+            <button class="header-avatar-btn" data-screen="profile" aria-label="Profile and settings">
+              <img src="" alt="Avatar" id="header-avatar-img" />
+            </button>
+            <div>
+              <div class="header-greeting-title" id="header-greeting-title">Good Morning 👋</div>
+              <div class="header-greeting-sub">GreenLife Routine</div>
+            </div>
+          </div>
+
+          <div class="header-actions">
+            <!-- Sync Indicator Pill -->
+            <div class="backend-status-pill" id="header-sync-pill" data-screen="profile" title="Google Sheets API Status">
+              <span class="status-indicator-dot" id="sync-indicator-dot"></span>
+              <span id="sync-status-label">Live</span>
+            </div>
+
+            <!-- Quick Theme Button -->
+            <button class="icon-btn" onclick="UI.toggleTheme()" aria-label="Toggle dark/light theme" title="Toggle Theme">
+              🌓
+            </button>
+          </div>
+        </header>
+
+        <!-- SCREEN 1: TODAY / HOME -->
+        <section id="screen-home" class="screen active"></section>
+
+        <!-- SCREEN 2: HABITS MANAGEMENT -->
+        <section id="screen-habits" class="screen"></section>
+
+        <!-- SCREEN 3: TASKS MANAGEMENT -->
+        <section id="screen-tasks" class="screen"></section>
+
+        <!-- SCREEN 4: CALENDAR -->
+        <section id="screen-calendar" class="screen"></section>
+
+        <!-- SCREEN 5: ANALYTICS -->
+        <section id="screen-analytics" class="screen"></section>
+
+        <!-- SCREEN 6: PROFILE & SETTINGS -->
+        <section id="screen-profile" class="screen"></section>
+
+        <!-- Floating Action Button (+ Add) -->
+        <button class="fab-btn" id="global-fab-btn" aria-label="Create new habit or task" title="Quick Add">
+          +
+        </button>
+      </main>
+
+      <!-- MOBILE BOTTOM NAVIGATION (Shown on mobile & tablet) -->
+      <nav class="bottom-nav" aria-label="Mobile Bottom Navigation">
+        <button class="nav-item active" data-screen="home" aria-label="Today Home">
+          <span class="nav-item-icon">🏠</span>
+          <span>Today</span>
+        </button>
+        <button class="nav-item" data-screen="habits" aria-label="Habits">
+          <span class="nav-item-icon">🏃‍♂️</span>
+          <span>Habits</span>
+        </button>
+        <button class="nav-item" data-screen="tasks" aria-label="Tasks">
+          <span class="nav-item-icon">📋</span>
+          <span>Tasks</span>
+        </button>
+        <button class="nav-item" data-screen="calendar" aria-label="Calendar">
+          <span class="nav-item-icon">📅</span>
+          <span>Calendar</span>
+        </button>
+        <button class="nav-item" data-screen="analytics" aria-label="Analytics">
+          <span class="nav-item-icon">📊</span>
+          <span>Insights</span>
+        </button>
+        <button class="nav-item" data-screen="profile" aria-label="Profile">
+          <span class="nav-item-icon">👤</span>
+          <span>Profile</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- ======================================================================
+         MODALS & BOTTOM SHEETS
+         ====================================================================== -->
+
+    <!-- MODAL 1: ADD / EDIT HABIT -->
+    <div id="modal-habit-form" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="habit-modal-title">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-header">
+          <h3 class="modal-title" id="habit-modal-title">Create New Habit</h3>
+          <button class="modal-close-btn modal-close-trigger" aria-label="Close modal">✕</button>
+        </div>
+
+        <form id="habit-form">
+          <input type="hidden" id="habit-form-id" value="" />
+          <input type="hidden" id="habit-selected-icon" value="🏃‍♂️" />
+          <input type="hidden" id="habit-selected-freq" value="Every day" />
+
+          <div class="form-group">
+            <label class="form-label" for="habit-name-input">Habit Name *</label>
+            <input type="text" id="habit-name-input" class="form-input" placeholder="e.g., Morning Sprint Workout" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Select Icon</label>
+            <div class="icon-preset-grid">
+              <button type="button" class="icon-preset-btn selected" data-icon="🏃‍♂️">🏃‍♂️</button>
+              <button type="button" class="icon-preset-btn" data-icon="🚴">🚴</button>
+              <button type="button" class="icon-preset-btn" data-icon="💧">💧</button>
+              <button type="button" class="icon-preset-btn" data-icon="📚">📚</button>
+              <button type="button" class="icon-preset-btn" data-icon="🧘">🧘</button>
+              <button type="button" class="icon-preset-btn" data-icon="🥗">🥗</button>
+              <button type="button" class="icon-preset-btn" data-icon="💻">💻</button>
+              <button type="button" class="icon-preset-btn" data-icon="⚡">⚡</button>
+              <button type="button" class="icon-preset-btn" data-icon="🎯">🎯</button>
+              <button type="button" class="icon-preset-btn" data-icon="🛌">🛌</button>
+              <button type="button" class="icon-preset-btn" data-icon="🏊‍♂️">🏊‍♂️</button>
+              <button type="button" class="icon-preset-btn" data-icon="🏋️‍♂️">🏋️‍♂️</button>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label" for="habit-category-select">Category</label>
+              <select id="habit-category-select" class="form-select">
+                <option value="Fitness">Fitness 🏃</option>
+                <option value="Health">Health 🥗</option>
+                <option value="Learning">Learning 📚</option>
+                <option value="Mind">Mind 🧘</option>
+                <option value="Productivity">Productivity ⚡</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="habit-target-input">Target / Goal</label>
+              <input type="text" id="habit-target-input" class="form-input" placeholder="e.g., 30 mins, 2L, 20p" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Frequency</label>
+            <div class="frequency-pills" id="habit-freq-pills">
+              <span class="freq-pill selected" data-freq="Every day">Every day</span>
+              <span class="freq-pill" data-freq="Weekdays">Weekdays</span>
+              <span class="freq-pill" data-freq="Weekends">Weekends</span>
+              <span class="freq-pill" data-freq="3x Weekly">3x Weekly</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="habit-reminder-input">Reminder Time (Optional)</label>
+            <input type="text" id="habit-reminder-input" class="form-input" placeholder="e.g., 07:00 AM" />
+          </div>
+
+          <button type="submit" class="btn-primary" id="save-habit-submit-btn">
+            Save Habit
+          </button>
+          <button type="button" class="btn-secondary modal-close-trigger">
+            Cancel
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL 2: ADD / EDIT TASK -->
+    <div id="modal-task-form" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-header">
+          <h3 class="modal-title" id="task-modal-title">Add New Task</h3>
+          <button class="modal-close-btn modal-close-trigger" aria-label="Close modal">✕</button>
+        </div>
+
+        <form id="task-form">
+          <input type="hidden" id="task-form-id" value="" />
+
+          <div class="form-group">
+            <label class="form-label" for="task-title-input">Task Title *</label>
+            <input type="text" id="task-title-input" class="form-input" placeholder="e.g., Complete high-cadence interval sprint" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="task-desc-input">Description / Notes</label>
+            <textarea id="task-desc-input" class="form-textarea" rows="2" placeholder="Optional details, pacing, reps..."></textarea>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label" for="task-date-input">Due Date</label>
+              <input type="date" id="task-date-input" class="form-input" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="task-time-input">Time</label>
+              <input type="text" id="task-time-input" class="form-input" placeholder="e.g., 10:00 AM" />
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label" for="task-priority-select">Priority</label>
+              <select id="task-priority-select" class="form-select">
+                <option value="High">🔴 High Priority</option>
+                <option value="Medium" selected>🟡 Medium Priority</option>
+                <option value="Low">🟢 Low Priority</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="task-category-select">Category</label>
+              <select id="task-category-select" class="form-select">
+                <option value="Fitness">Fitness</option>
+                <option value="Work">Work</option>
+                <option value="Health">Health</option>
+                <option value="Study">Study</option>
+                <option value="General" selected>General</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary" id="save-task-submit-btn">
+            Save Task
+          </button>
+          <button type="button" class="btn-secondary modal-close-trigger">
+            Cancel
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL 3: CONFIRMATION DIALOG -->
+    <div id="modal-confirm" class="modal-overlay" role="dialog" aria-modal="true">
+      <div class="modal-sheet" style="max-width: 420px; text-align: center;">
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">⚠️</div>
+        <h3 class="modal-title" id="confirm-title" style="margin-bottom: 8px; justify-content: center;">Confirm Action</h3>
+        <p id="confirm-message" style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5;"></p>
+        
+        <button class="btn-danger" id="confirm-action-btn">Confirm Delete</button>
+        <button class="btn-secondary modal-close-trigger">Cancel</button>
+      </div>
+    </div>
+
+    <!-- MODAL 4: GOOGLE SHEETS BACKEND CONFIG -->
+    <div id="modal-backend-config" class="modal-overlay" role="dialog" aria-modal="true">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-header">
+          <h3 class="modal-title">Google Sheets Backend API</h3>
+          <button class="modal-close-btn modal-close-trigger">✕</button>
+        </div>
+
+        <form id="api-config-form">
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
+            GreenLife communicates with a Google Apps Script Web App deployed on top of Google Sheets. You can use the default endpoint or paste your custom deployed script URL.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label" for="api-url-input">Google Apps Script Web App URL</label>
+            <input 
+              type="url" 
+              id="api-url-input" 
+              class="form-input" 
+              placeholder="https://script.google.com/macros/s/.../exec"
+              required 
+            />
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+            <button type="button" class="btn-secondary" id="test-api-btn" style="flex: 1; margin: 0;">
+              Test Endpoint
+            </button>
+          </div>
+
+          <button type="submit" class="btn-primary">Save Endpoint</button>
+          <button type="button" class="btn-secondary modal-close-trigger">Cancel</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL 5: GOOGLE APPS SCRIPT CODE VIEWER -->
+    <div id="modal-appscript-code" class="modal-overlay" role="dialog" aria-modal="true">
+      <div class="modal-sheet" style="max-width: 680px;">
+        <div class="modal-handle"></div>
+        <div class="modal-header">
+          <h3 class="modal-title">Google Apps Script Backend (Code.gs)</h3>
+          <button class="modal-close-btn modal-close-trigger">✕</button>
+        </div>
+
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          Paste this complete code into your Google Sheets <strong>Extensions -> Apps Script</strong> editor and deploy as a Web App with access set to <em>"Anyone"</em>.
+        </p>
+
+        <button class="btn-primary" id="copy-appscript-btn" style="margin-bottom: 14px; padding: 10px 16px; font-size: 0.9rem;">
+          📋 Copy Code.gs to Clipboard
+        </button>
+
+        <pre style="background: var(--surface-subtle); border: 1px solid var(--border); padding: 14px; border-radius: var(--radius-md); font-size: 0.75rem; max-height: 280px; overflow-y: auto; color: var(--text);" id="appscript-code-block">
+const SHEET_USERS = 'Users';
+const SHEET_HABITS = 'Habits';
+const SHEET_HABIT_LOGS = 'HabitLogs';
+const SHEET_TASKS = 'Tasks';
+
+function doGet(e) {
+  const params = e.parameter || {};
+  const action = params.action || 'getUsers';
+  ensureDatabaseSetup();
+  // Handles getUsers, getHabits, getHabitLogs, getTasks, getProgress, getCalendar, getStatistics
+  return ContentService.createTextOutput(JSON.stringify({ success: true, data: [] }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const payload = JSON.parse(e.postData.contents);
+  ensureDatabaseSetup();
+  // Handles addHabit, updateHabit, deleteHabit, toggleHabit, addTask, updateTask, deleteTask, toggleTask
+  return ContentService.createTextOutput(JSON.stringify({ success: true }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+        </pre>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         VANILLA JAVASCRIPT MODULE SCRIPTS
+         ====================================================================== -->
+    <script src="/js/utils.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/state.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/dashboard.js"></script>
+    <script src="/js/habits.js"></script>
+    <script src="/js/tasks.js"></script>
+    <script src="/js/calendar.js"></script>
+    <script src="/js/analytics.js"></script>
+    <script src="/js/profile.js"></script>
+    <script src="/js/app.js"></script>
+  </body>
+</html>
