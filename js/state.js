@@ -141,7 +141,12 @@ const AppState = {
   getCurrentUserObj() {
     if (!this.currentUser) return null;
     const found = this.users.find((u) => u.userId === this.currentUser);
-    if (found) return found;
+    if (found) {
+      return {
+        ...found,
+        avatar: found.avatar || Utils.athleteAvatars[this.currentUser] || Utils.athleteAvatars.hemnath,
+      };
+    }
 
     return {
       userId: this.currentUser,
